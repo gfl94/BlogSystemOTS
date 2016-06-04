@@ -7,6 +7,7 @@ import com.aliyun.openservices.ots.model.*;
 
 import java.security.MessageDigest;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 /**
@@ -23,8 +24,12 @@ public class BlogSystem {
 
     private final String[] OperationMessages = {"Article addition", "Article Comment", "Article Like"};
 
-    private final String sTableName = "BlogInfoTable2";
+    private final String sTableName = "BlogInfoTable";
     private int count;
+
+    private class BlogInfoRow{
+
+    }
 
     public BlogSystem(String endPoint, String accessId, String accessKey, String instanceName){
         if (mOTSClient == null){
@@ -121,13 +126,15 @@ public class BlogSystem {
                             int articleId_high, int actionType){
         RangeRowQueryCriteria criteria = new RangeRowQueryCriteria(sTableName);
         RowPrimaryKey inclusiveStartKey = new RowPrimaryKey();
+        inclusiveStartKey.addPrimaryKeyColumn("Md5Count", PrimaryKeyValue.INF_MIN);
         inclusiveStartKey.addPrimaryKeyColumn("UserID", PrimaryKeyValue.fromLong(userId_low));
         inclusiveStartKey.addPrimaryKeyColumn("ArticleID", PrimaryKeyValue.fromLong(articleId_low));
         inclusiveStartKey.addPrimaryKeyColumn("ActionType", PrimaryKeyValue.fromLong(actionType));
         RowPrimaryKey exclusiveEndKey = new RowPrimaryKey();
+        exclusiveEndKey.addPrimaryKeyColumn("Md5Count", PrimaryKeyValue.INF_MAX);
         exclusiveEndKey.addPrimaryKeyColumn("UserID", PrimaryKeyValue.fromLong(userId_high));
         exclusiveEndKey.addPrimaryKeyColumn("ArticleID", PrimaryKeyValue.fromLong(articleId_high));
-        exclusiveEndKey.addPrimaryKeyColumn("ActionType", PrimaryKeyValue.fromLong(actionType));
+        exclusiveEndKey.addPrimaryKeyColumn("ActionType", PrimaryKeyValue.fromLong(actionType + 1));
 
         criteria.setInclusiveStartPrimaryKey(inclusiveStartKey);
         criteria.setExclusiveEndPrimaryKey(exclusiveEndKey);
@@ -140,6 +147,7 @@ public class BlogSystem {
             GetRangeResult result = mOTSClient.getRange(request);
             return result.getRows();
         } catch (OTSException ots){
+            ots.printStackTrace();
             System.out.println("OTSException");
         } catch (ClientException cli){
             System.out.println("ClientException");
@@ -190,22 +198,54 @@ public class BlogSystem {
     }
 
     public void queryArticle(int articleId){
-        List<Row> result = queryRange(Integer.MIN_VALUE, Integer.MAX_VALUE, articleId, articleId,
+//        RangeRowQueryCriteria criteria = new RangeRowQueryCriteria(sTableName);
+//        RowPrimaryKey inclusiveStartKey = new RowPrimaryKey();
+//        inclusiveStartKey.addPrimaryKeyColumn("Md5Count", PrimaryKeyValue.INF_MIN);
+//        inclusiveStartKey.addPrimaryKeyColumn("UserID", PrimaryKeyValue.INF_MIN);
+//        inclusiveStartKey.addPrimaryKeyColumn("ArticleID", PrimaryKeyValue.fromLong(articleId));
+//        inclusiveStartKey.addPrimaryKeyColumn("ActionType", PrimaryKeyValue.fromLong(0));
+//        RowPrimaryKey exclusiveEndKey = new RowPrimaryKey();
+//        exclusiveEndKey.addPrimaryKeyColumn("Md5Count", PrimaryKeyValue.INF_MAX);
+//        exclusiveEndKey.addPrimaryKeyColumn("UserID", PrimaryKeyValue.INF_MAX);
+//        exclusiveEndKey.addPrimaryKeyColumn("ArticleID", PrimaryKeyValue.fromLong(articleId + 1));
+//        exclusiveEndKey.addPrimaryKeyColumn("ActionType", PrimaryKeyValue.fromLong(100));
+//
+//        criteria.setInclusiveStartPrimaryKey(inclusiveStartKey);
+//        criteria.setExclusiveEndPrimaryKey(exclusiveEndKey);
+//        criteria.setDirection(Direction.FORWARD);
+//        criteria.setLimit(1);
+//
+//        GetRangeRequest request = new GetRangeRequest();
+//        request.setRangeRowQueryCriteria(criteria);
+//
+//        try{
+//            GetRangeResult result = mOTSClient.getRange(request);
+//            printRows(result.getRows());
+////            return result.getRows();
+//        } catch (OTSException ots){
+//            ots.printStackTrace();
+//            System.out.println("OTSException");
+//        } catch (ClientException cli){
+//            System.out.println("ClientException");
+//        }
+        List<Row> result = queryRange(Integer.MIN_VALUE, Integer.MAX_VALUE, articleId, articleId + 1,
                 ALL_OPERATIONS);
         printRows(result);
     }
 
     public void queryUser(int userId){
-        printRows(queryRange(userId, userId, Integer.MIN_VALUE, Integer.MAX_VALUE, ALL_OPERATIONS));
+        printRows(queryRange(userId, userId + 1, Integer.MIN_VALUE, Integer.MAX_VALUE, ALL_OPERATIONS));
     }
 
     public void printAllRows(){
         RangeRowQueryCriteria criteria = new RangeRowQueryCriteria(sTableName);
         RowPrimaryKey inclusiveStartKey = new RowPrimaryKey();
+        inclusiveStartKey.addPrimaryKeyColumn("Md5Count", PrimaryKeyValue.INF_MIN);
         inclusiveStartKey.addPrimaryKeyColumn("UserID", PrimaryKeyValue.fromLong(0));
         inclusiveStartKey.addPrimaryKeyColumn("ArticleID", PrimaryKeyValue.fromLong(0));
         inclusiveStartKey.addPrimaryKeyColumn("ActionType", PrimaryKeyValue.fromLong(0));
         RowPrimaryKey exclusiveEndKey = new RowPrimaryKey();
+        exclusiveEndKey.addPrimaryKeyColumn("Md5Count", PrimaryKeyValue.INF_MAX);
         exclusiveEndKey.addPrimaryKeyColumn("UserID", PrimaryKeyValue.fromLong(10));
         exclusiveEndKey.addPrimaryKeyColumn("ArticleID", PrimaryKeyValue.fromLong(10));
         exclusiveEndKey.addPrimaryKeyColumn("ActionType", PrimaryKeyValue.fromLong(10));
